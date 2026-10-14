@@ -5,6 +5,8 @@
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const view = document.getElementById("view");
   const strip = w => w.replace(/^[„“"‚‘(]+|[.,!?;:„“"‘’)]+$/g, "");
+  const byText = t => [...view.querySelectorAll("button")].find(b => b.textContent.trim() === t);
+  const click = b => { if (!b) throw new Error("button not found"); b.click(); };
   try {
     for (const h of ["home", "learn", "learn/05", "practise", "exam", "profile"]) {
       location.hash = h; await wait(60);
@@ -81,6 +83,21 @@
     if (!saved || !Object.keys(saved.items).length || !saved.mocks.length) fail("progress not persisted"); else ok("persisted " + Object.keys(saved.items).length + " items, " + saved.mocks.length + " mock");
     location.hash = "profile"; await wait(60);
     if (!view.querySelector(".mastery")) fail("profile grid");
+
+    // exam results → practise a weak topic → session summary → next weak area / back to results
+    window.confirm = () => true;
+    location.hash = "exam"; await wait(60); click(byText("Start mock exam")); await wait(80);
+    click(byText("Finish exam")); await wait(80);
+    const rows = [...view.querySelectorAll(".review-item")].filter(r => [...r.querySelectorAll("button")].some(b => b.textContent === "Practise"));
+    if (!rows.length) fail("no weak topics on results"); else {
+      click([...rows[0].querySelectorAll("button")].find(b => b.textContent === "Practise")); await wait(80);
+      if (!byText("← Exam results")) fail("no back link in session"); else ok("session from exam has back link");
+      click(byText("End")); await wait(60);
+      const nxt = [...view.querySelectorAll("button")].find(b => b.textContent.startsWith("Next weak area") || b.textContent === "Back to exam results");
+      if (!nxt) fail("summary lacks exam chain buttons"); else ok("summary offers " + nxt.textContent);
+      click(byText("Back to exam results")); await wait(60);
+      if (!view.querySelector(".summary") || !view.textContent.includes("✓ practised")) fail("results not restored with practised mark"); else ok("back on results, topic ticked");
+    }
   } catch (e) { fail("exception " + e.message + "\n" + e.stack); }
   document.body.insertAdjacentHTML("beforeend", `<pre id="smoke">${log.join("\n").replace(/</g, "&lt;")}\nDONE ${log.filter(l => l.startsWith("FAIL")).length} failures</pre>`);
 })();

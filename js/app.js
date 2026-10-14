@@ -160,6 +160,7 @@
     const v = el("div");
     const prog = el("div", "progress", `<span class="num small">${session.i + 1} / ${session.queue.length}</span><div class="bar"><i style="width:${100 * session.i / session.queue.length}%"></i></div>`);
     const quit = el("button", "btn small quiet", "End"); quit.onclick = () => { if (confirm("End this session? Progress so far is saved.")) { session.queue = session.queue.slice(0, session.i); runView(); } };
+    if (session.cfg.from === "exam" && examResult) { const back = el("button", "btn small quiet", "← Exam results"); back.onclick = () => { if (confirm("Back to the exam results? Progress so far is saved.")) { session.queue = session.queue.slice(0, session.i); go("exam/run"); } }; prog.appendChild(back); }
     prog.appendChild(quit); v.appendChild(prog);
     const card = el("div", "card exercise");
     const tl = el("div", "topic-line", `<span>${t.id} · ${esc(t.title)} · Level ${item.level}</span>`);
@@ -216,8 +217,18 @@
     });
     const btns = el("div", "row"); btns.style.marginTop = "14px";
     const wrongOnes = r.filter(x => !x.correct).map(x => x.item);
-    if (wrongOnes.length) { const b = el("button", "btn primary", `Review ${wrongOnes.length} mistake${wrongOnes.length > 1 ? "s" : ""}`); b.onclick = () => { session = { queue: Engine.shuffle(wrongOnes), i: 0, results: [], cfg: session.cfg }; runView(); }; btns.appendChild(b); }
-    const again = el("button", "btn" + (wrongOnes.length ? "" : " primary"), "Same settings again"); again.onclick = () => startSession(session.cfg); btns.appendChild(again);
+    const fromExam = session.cfg.from === "exam" && examResult;
+    if (fromExam) {
+      // Chain through the exam's weak topics: mark this one done, offer the next one
+      examResult.practised = examResult.practised || [];
+      if (session.cfg.examTid && !examResult.practised.includes(session.cfg.examTid)) examResult.practised.push(session.cfg.examTid);
+      const next = Exam.missedTopics(examResult).find(m => !examResult.practised.includes(m.tid));
+      if (next) { const nt = topic(next.tid); const nb = el("button", "btn primary", `Next weak area: ${nt.id} ${esc(nt.title)}`); nb.onclick = () => startSession(Object.assign({}, session.cfg, { topics: [next.tid], examTid: next.tid })); btns.appendChild(nb); }
+      else v.appendChild(el("p", "muted", "You have practised every topic where you lost points in this exam."));
+      const back = el("button", "btn", "Back to exam results"); back.onclick = () => go("exam/run"); btns.appendChild(back);
+    }
+    if (wrongOnes.length) { const b = el("button", "btn" + (fromExam ? "" : " primary"), `Review ${wrongOnes.length} mistake${wrongOnes.length > 1 ? "s" : ""}`); b.onclick = () => { session = { queue: Engine.shuffle(wrongOnes), i: 0, results: [], cfg: session.cfg }; runView(); }; btns.appendChild(b); }
+    const again = el("button", "btn" + (wrongOnes.length || fromExam ? "" : " primary"), "Same settings again"); again.onclick = () => startSession(session.cfg); btns.appendChild(again);
     const ch = el("button", "btn quiet", "Change settings"); ch.onclick = () => go("practise"); btns.appendChild(ch);
     card.appendChild(btns); v.appendChild(card);
     return v;
@@ -249,7 +260,7 @@
   }
   function examRun() {
     view.innerHTML = "";
-    if (examResult) { Exam.renderResults(view, examResult, { openTopic, onRetry: () => go("exam"), onPractise: tid => startSession({ topics: [tid], level: "mix", types: Object.keys(TYPES), count: 10 }) }); return; }
+    if (examResult) { Exam.renderResults(view, examResult, { openTopic, onRetry: () => go("exam"), onPractise: tid => startSession({ topics: [tid], level: "mix", types: Object.keys(TYPES), count: 10, from: "exam", examTid: tid }) }); return; }
     if (!examState) { go("exam"); return; }
     examCtl = Exam.render(view, examState, { onSubmit: res => { examResult = res; examState = null; examRun(); window.scrollTo({ top: 0 }); } });
   }

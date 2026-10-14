@@ -139,6 +139,10 @@ window.Exam = (() => {
     return res;
   }
 
+  // Topics where points were lost, worst first
+  function missedTopics(res) {
+    return Object.entries(res.perTopic).filter(([, p]) => p.c < p.a).sort((a, b) => (b[1].a - b[1].c) - (a[1].a - a[1].c)).map(([t, p]) => ({ tid: t, wrong: p.a - p.c, of: p.a }));
+  }
   function renderResults(container, res, { openTopic, onRetry, onPractise }) {
     container.innerHTML = "";
     const pass = res.pct >= CONFIG.passPct;
@@ -150,12 +154,12 @@ window.Exam = (() => {
     const btns = el("div", "row"); const again = el("button", "btn primary", "New mock exam"); again.onclick = onRetry; btns.appendChild(again);
     top.appendChild(btns); container.appendChild(top);
 
-    const missed = Object.entries(res.perTopic).filter(([, p]) => p.c < p.a).sort((a, b) => (b[1].a - b[1].c) - (a[1].a - a[1].c));
-    const tcard = el("div", "card", `<h3>Where you lost points</h3>${missed.length ? "" : '<p class="muted">Nothing missed. Impressive.</p>'}`);
-    missed.forEach(([tid, p]) => {
-      const t = TOPICS.find(x => x.id === tid);
-      const r = el("div", "row between review-item", `<span><b>${t.id}</b> ${esc(t.title)} <span class="muted small">${p.a - p.c} of ${p.a} wrong</span></span>`);
-      const rb = el("div", "row"); const g = el("button", "btn small", "Read grammar"); g.onclick = () => openTopic(tid); const pr = el("button", "btn small quiet", "Practise"); pr.onclick = () => onPractise(tid);
+    const missed = missedTopics(res), done = res.practised || [];
+    const tcard = el("div", "card", `<h3>Where you lost points</h3>${missed.length ? '<p class="muted small">Practise a topic and come back here; practised topics are ticked.</p>' : '<p class="muted">Nothing missed. Impressive.</p>'}`);
+    missed.forEach(({ tid, wrong, of }) => {
+      const t = TOPICS.find(x => x.id === tid), isDone = done.includes(tid);
+      const r = el("div", "row between review-item", `<span><b>${t.id}</b> ${esc(t.title)} <span class="muted small">${wrong} of ${of} wrong</span>${isDone ? ' <span class="yes small" style="color:var(--green)">✓ practised</span>' : ""}</span>`);
+      const rb = el("div", "row"); const g = el("button", "btn small quiet", "Read grammar"); g.onclick = () => openTopic(tid); const pr = el("button", "btn small" + (isDone ? " quiet" : ""), isDone ? "Practise again" : "Practise"); pr.onclick = () => onPractise(tid);
       rb.append(g, pr); r.appendChild(rb); tcard.appendChild(r);
     });
     container.appendChild(tcard);
@@ -169,5 +173,5 @@ window.Exam = (() => {
     container.appendChild(review);
   }
 
-  return { build, render, renderResults };
+  return { build, render, renderResults, missedTopics };
 })();

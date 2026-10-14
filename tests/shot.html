@@ -21,6 +21,10 @@ f.onload = async () => {
     const ws = v.querySelectorAll(".sentence .w"); ws[1].click(); }
   if (act === "exam" || act === "exam2") { click(byText("Start mock exam")); await wait(100); if (act === "exam2") { click([...d.querySelectorAll(".chip")][1]); await wait(50); d.querySelectorAll(".cloze .g")[0].click(); } }
   if (act === "drawer") { click(byText("Grammar")); }
+  if (act === "examchain" || act === "examback") { win.confirm = () => true; click(byText("Start mock exam")); await wait(80); click(byText("Finish exam")); await wait(80);
+    const row = [...d.querySelectorAll(".review-item")].find(r => [...r.querySelectorAll("button")].some(b => b.textContent === "Practise"));
+    click([...row.querySelectorAll("button")].find(b => b.textContent === "Practise")); await wait(80); click(byText("End")); await wait(60);
+    if (act === "examback") { click(byText("Back to exam results")); await wait(60); } }
   document.title = "ready";
 };
 </script>
