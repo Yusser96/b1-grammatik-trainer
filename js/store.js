@@ -1,6 +1,6 @@
 // Progress store: localStorage only. Shape documented in docs/superpowers/specs.
 window.Store = (() => {
-  const KEY = "b1trainer.v1";
+  const KEY = (window.CONFIG && CONFIG.storageKey) || "b1trainer.v1";
   const blank = () => ({ items: {}, mocks: [], days: {}, settings: { theme: "auto", fs: "normal", timer: 30 } });
   let data = blank();
   try { const raw = localStorage.getItem(KEY); if (raw) data = Object.assign(blank(), JSON.parse(raw)); } catch (e) { /* private mode */ }

@@ -77,7 +77,7 @@
     Exam.renderResults(c, result, { openTopic() {}, onRetry() {}, onPractise() {} });
     if (!c.querySelector(".summary")) fail("no results view"); else ok("results view");
     c.remove();
-    const saved = JSON.parse(localStorage.getItem("b1trainer.v1"));
+    const saved = JSON.parse(localStorage.getItem(CONFIG.storageKey));
     if (!saved || !Object.keys(saved.items).length || !saved.mocks.length) fail("progress not persisted"); else ok("persisted " + Object.keys(saved.items).length + " items, " + saved.mocks.length + " mock");
     location.hash = "profile"; await wait(60);
     if (!view.querySelector(".mastery")) fail("profile grid");

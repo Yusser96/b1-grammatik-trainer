@@ -6,17 +6,19 @@ const vm = require("vm");
 const root = path.join(__dirname, "..");
 const ctx = { window: {} };
 vm.createContext(ctx);
-for (const f of ["data/topics.js", "data/items.js", "data/items-a.js", "data/items-b.js", "data/items-c.js", "data/exam.js"]) {
+const itemFiles = fs.readdirSync(path.join(root, "data")).filter(f => /^items-.*\.js$/.test(f)).sort().map(f => "data/" + f);
+for (const f of ["data/config.js", "data/topics.js", "data/items.js", ...itemFiles, "data/exam.js"]) {
   vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
 }
-const { TOPICS, ITEMS, EXAMS } = ctx.window;
+const { CONFIG, TOPICS, ITEMS, EXAMS } = ctx.window;
 const errors = [];
 const err = m => errors.push(m);
 const tok = s => s.split(/\s+/).map(w => w.replace(/^[„“"‚‘(]+|[.,!?;:„“"‘’)]+$/g, "")).filter(Boolean);
 
 // topics
 const topicIds = new Set(TOPICS.map(t => t.id));
-if (TOPICS.length !== 27) err(`expected 27 topics, got ${TOPICS.length}`);
+if (TOPICS.length !== CONFIG.topics) err(`expected ${CONFIG.topics} topics, got ${TOPICS.length}`);
+for (const k of ["level", "storageKey", "hero", "examIntro", "examTiming", "teil1Note", "pointsNote", "passPct", "siblings"]) if (CONFIG[k] === undefined) err(`config missing ${k}`);
 for (const t of TOPICS) {
   for (const k of ["id", "title", "tag", "intuition", "rule", "examples", "trap"]) if (!t[k]) err(`topic ${t.id} missing ${k}`);
   if (t.table && t.table.rows.some(r => r.length !== t.table.head.length)) err(`topic ${t.id} table row length mismatch`);

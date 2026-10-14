@@ -6,7 +6,9 @@ window.Exam = (() => {
   const POINTS = 1.5;
 
   function build(cfg) {
-    const t1 = pick(EXAMS.teil1), t2 = pick(EXAMS.teil2);
+    // Teil 1: shuffle the a/b/c options of every gap so the right answer is not always (a)
+    const t1raw = pick(EXAMS.teil1), t2 = pick(EXAMS.teil2);
+    const t1 = Object.assign({}, t1raw, { gaps: t1raw.gaps.map(g => { const idx = Engine.shuffle(g.options.map((_, i) => i)); return Object.assign({}, g, { options: idx.map(i => g.options[i]), answer: idx.indexOf(g.answer) }); }) });
     // Teil 3: 20 items, spread across topics, respecting the chosen level
     const pool = ITEMS.filter(i => cfg.level === "mix" || i.level === +cfg.level);
     const byTopic = {}; for (const i of pool) (byTopic[i.topic] = byTopic[i.topic] || []).push(i);
@@ -82,7 +84,7 @@ window.Exam = (() => {
   function renderTeil1(exam, next) {
     const wrap = el("div");
     const { src, answers } = exam.t1;
-    wrap.appendChild(el("div", "card", `<h2>Teil 1 · Sprachbausteine</h2><p class="muted">Read the letter and choose the right word for each gap (a, b or c). In telc this part is worth 15 points.</p><h3 class="de">${esc(src.title)}</h3><div class="cloze" id="t1-cloze"></div>`));
+    wrap.appendChild(el("div", "card", `<h2>Teil 1 · Sprachbausteine</h2><p class="muted">Read the letter and choose the right word for each gap (a, b or c). ${CONFIG.teil1Note}</p><h3 class="de">${esc(src.title)}</h3><div class="cloze" id="t1-cloze"></div>`));
     const rows = el("div", "gaprows");
     const draw = () => {
       wrap.querySelector("#t1-cloze").innerHTML = clozeHTML(src.text, n => `<span class="g"><span class="n">${n}</span>${answers[n - 1] == null ? "&nbsp;" : esc(src.gaps[n - 1].options[answers[n - 1]])}</span>`);
@@ -139,12 +141,12 @@ window.Exam = (() => {
 
   function renderResults(container, res, { openTopic, onRetry, onPractise }) {
     container.innerHTML = "";
-    const pass = res.pct >= 60;
+    const pass = res.pct >= CONFIG.passPct;
     const top = el("div", "card summary");
     top.innerHTML = `<h2>Result</h2><div class="big num">${res.points} <span class="muted" style="font-size:1.2rem">/ ${res.max} points</span></div>
-      <p class="${pass ? "yes" : "you"}" style="font-weight:700;color:${pass ? "var(--green)" : "var(--red)"}">${res.pct}% · ${pass ? "above" : "below"} the telc pass line of 60%</p>
+      <p class="${pass ? "yes" : "you"}" style="font-weight:700;color:${pass ? "var(--green)" : "var(--red)"}">${res.pct}% · ${pass ? "above" : "below"} the pass line of ${CONFIG.passPct}%</p>
       <div class="stack">${res.parts.map(p => `<div><div class="row between"><span>${p.name}</span><span class="num">${p.correct} / ${p.total}</span></div><div class="bar${p.correct / p.total >= .6 ? " green" : ""}"><i style="width:${100 * p.correct / p.total}%"></i></div></div>`).join("")}</div>
-      <p class="muted small" style="margin-top:10px">Time used: about ${res.minutes} min. Each gap counts 1.5 points, as in telc Sprachbausteine.</p>`;
+      <p class="muted small" style="margin-top:10px">Time used: about ${res.minutes} min. ${CONFIG.pointsNote}</p>`;
     const btns = el("div", "row"); const again = el("button", "btn primary", "New mock exam"); again.onclick = onRetry; btns.appendChild(again);
     top.appendChild(btns); container.appendChild(top);
 

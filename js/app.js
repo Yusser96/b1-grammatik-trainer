@@ -59,10 +59,11 @@
   function home() {
     const tot = Store.totals(), weak = Store.weakest(3);
     const v = el("div");
-    v.innerHTML = `<div class="hero"><h1>Grammatik für die B1-Prüfung</h1><p class="muted">Short sessions, instant correction, and the rule one tap away.</p></div>
+    v.innerHTML = `<div class="hero"><h1>${esc(CONFIG.hero)}</h1><p class="muted">Short sessions, instant correction, and the rule one tap away.</p></div>
       <div class="stats"><div class="stat"><b class="num">${Store.streak()}</b><span>day streak</span></div><div class="stat"><b class="num">${Store.todayCount()}</b><span>answered today</span></div><div class="stat"><b class="num">${tot.attempts ? pct(tot.accuracy) + "%" : "–"}</b><span>accuracy overall</span></div></div>
       <h2 style="margin-top:22px">Start</h2><div class="quick" id="quick"></div>
-      <h2 style="margin-top:22px">Needs attention</h2><div class="card" id="weak"></div>`;
+      <h2 style="margin-top:22px">Needs attention</h2><div class="card" id="weak"></div>
+      <p class="muted small" style="margin-top:18px">Other levels: ${CONFIG.siblings.filter(s => s.level !== CONFIG.level).map(s => `<a href="${esc(s.url)}">${esc(s.level)} trainer</a>`).join(" · ")}</p>`;
     const q = v.querySelector("#quick");
     const mk = (label, sub, fn, primary) => { const b = el("button", "btn" + (primary ? " primary" : ""), `<span>${label}<small>${sub}</small></span>`); b.onclick = fn; q.appendChild(b); };
     mk("Quick practice", "10 mixed questions, all levels", () => startSession({ topics: [], level: "mix", types: Object.keys(TYPES), count: 10 }), true);
@@ -224,7 +225,7 @@
 
   // ---------- exam ----------
   function exam() {
-    const v = el("div", "", `<h1>Mock exam</h1><p class="muted">Modelled on the telc Deutsch B1 <em>Sprachbausteine</em>: a letter with 10 gaps (a/b/c), a text with 10 gaps from a 15-word bank, then 20 shuffled grammar questions from the bank. No feedback until you finish, as in the real exam.</p>`);
+    const v = el("div", "", `<h1>Mock exam</h1><p class="muted">${CONFIG.examIntro}</p>`);
     const card = el("div", "card stack");
     card.appendChild(el("label", "field", "Level for the grammar mix"));
     const seg = el("div", "seg");
@@ -234,7 +235,7 @@
     const tseg = el("div", "seg");
     [[20, "20 min"], [30, "30 min"], [45, "45 min"], [0, "Off"]].forEach(([k, l]) => { const b = el("button", examCfg.minutes === k ? "on" : "", l); b.onclick = () => { examCfg.minutes = k; Store.setSetting("timer", k); redraw(); }; tseg.appendChild(b); });
     card.appendChild(tseg);
-    card.appendChild(el("p", "muted small", "telc allows 90 minutes for reading plus Sprachbausteine together; about 25–30 minutes for the two Sprachbausteine parts is realistic."));
+    card.appendChild(el("p", "muted small", CONFIG.examTiming));
     const start = el("button", "btn primary block", "Start mock exam"); start.onclick = () => { examState = Exam.build(examCfg); examResult = null; go("exam/run"); };
     card.appendChild(start); v.appendChild(card);
     const hist = Store.data.mocks;
@@ -278,7 +279,7 @@
     s.appendChild(el("label", "field", "Your data"));
     s.appendChild(el("p", "muted small", "Progress is stored only in this browser. Export a backup to move it to another device."));
     const row = el("div", "row");
-    const ex = el("button", "btn small", "Export backup"); ex.onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([Store.exportJSON()], { type: "application/json" })); a.download = `b1-trainer-${Store.today()}.json`; a.click(); };
+    const ex = el("button", "btn small", "Export backup"); ex.onclick = () => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([Store.exportJSON()], { type: "application/json" })); a.download = `${CONFIG.level.toLowerCase()}-trainer-${Store.today()}.json`; a.click(); };
     const im = el("label", "btn small", "Import backup"); const inp = el("input"); inp.type = "file"; inp.accept = "application/json"; inp.className = "hidden"; inp.onchange = () => { const f = inp.files[0]; if (!f) return; f.text().then(t => { try { Store.importJSON(t); toast("Backup imported."); redraw(); } catch (e) { toast("That file is not a trainer backup."); } }); }; im.appendChild(inp);
     const rs = el("button", "btn small quiet", "Reset all progress"); rs.style.color = "var(--red)"; rs.onclick = () => { if (confirm("Delete all progress in this browser? This cannot be undone.")) { Store.reset(); applySettings(); redraw(); } };
     row.append(ex, im, rs); s.appendChild(row); v.appendChild(s);

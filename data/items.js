@@ -1,4 +1,5 @@
-// Exercise bank core. Each data/items-*.js file calls window.addItems(fn) with a builder
+// Exercise bank core. Each data/items-*.js file calls window.addItems(fn) with a builder.
+// Ids continue per topic across files, so a topic may be extended in a later file.
 // that receives small helpers. Levels: 1 Basics (recognition), 2 Solid (production with
 // hints), 3 Exam (word order, error spotting, no hints).
 window.ITEMS = [];
@@ -6,7 +7,7 @@ window.addItems = function (build) {
   const I = window.ITEMS;
   let topic = null, n = 0;
   const push = o => { n++; I.push(Object.assign({ id: `${topic}-${String(n).padStart(2, "0")}`, topic }, o)); };
-  const T = id => { topic = id; n = 0; };
+  const T = id => { topic = id; n = I.filter(i => i.topic === id).length; };
   // multiple choice: options array, answer = index of the correct option
   const mc = (level, prompt, options, answer, explain) => push({ level, type: "mc", prompt, options, answer, explain });
   // fill the blank: prompt contains ___ ; answer = string or array of accepted strings
