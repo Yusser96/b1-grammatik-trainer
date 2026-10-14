@@ -1,0 +1,26 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;background:#888}iframe{border:0;display:block}</style>
+<iframe id="f"></iframe>
+<script>
+const q = new URLSearchParams(location.search);
+const w = +q.get("w") || 390, h = +q.get("h") || 844, route = q.get("route") || "home", act = q.get("act") || "";
+const f = document.getElementById("f"); f.width = w; f.height = h;
+f.src = "../index.html#" + route;
+f.onload = async () => {
+  const d = f.contentDocument, win = f.contentWindow; const wait = ms => new Promise(r => setTimeout(r, ms));
+  const click = sel => { const e = typeof sel === "string" ? d.querySelector(sel) : sel; if (e) e.click(); };
+  const byText = (t, root = d) => [...root.querySelectorAll("button")].find(b => b.textContent.trim().startsWith(t));
+  if (q.get("dark")) d.documentElement.dataset.theme = "dark";
+  await wait(100);
+  if (act === "quick") { click(byText("Quick practice")); await wait(100); }
+  if (act === "quickwrong") { click(byText("Quick practice")); await wait(100); const o = d.querySelectorAll(".opt"); if (o.length) { const wrongOne = [...o].find(b => +b.dataset.idx !== 0) || o[1]; wrongOne.click(); } }
+  if (act === "order") { click(byText("Quick practice")); await wait(50); // force an order item
+    const v = d.getElementById("view"); let tries = 0; while (!v.querySelector(".words") && tries++ < 40) { const ex = v.querySelector(".exercise"); const o = ex.querySelector(".opt"), i = ex.querySelector("input"), wd = ex.querySelector(".w"); if (o) o.click(); else if (i) { i.value = "x"; ex.querySelector(".fill-row button").click(); } else if (wd) wd.click(); await wait(20); const n = ex.querySelector(".feedback .btn.primary"); if (n) n.click(); else break; await wait(20); }
+    const tiles = v.querySelectorAll(".words .tile"); tiles[0].click(); tiles[1].click(); }
+  if (act === "wrongword") { click(byText("Quick practice")); await wait(50);
+    const v = d.getElementById("view"); let tries = 0; while (!v.querySelector(".sentence") && tries++ < 40) { const ex = v.querySelector(".exercise"); const o = ex.querySelector(".opt"), i = ex.querySelector("input"), t = ex.querySelector(".words .tile"); if (o) o.click(); else if (i) { i.value = "x"; ex.querySelector(".fill-row button").click(); } else if (t) { ex.querySelectorAll(".words .tile").forEach(x => x.click()); ex.querySelector(".row .btn.primary").click(); } await wait(20); const n = ex.querySelector(".feedback .btn.primary"); if (n) n.click(); else break; await wait(20); }
+    const ws = v.querySelectorAll(".sentence .w"); ws[1].click(); }
+  if (act === "exam" || act === "exam2") { click(byText("Start mock exam")); await wait(100); if (act === "exam2") { click([...d.querySelectorAll(".chip")][1]); await wait(50); d.querySelectorAll(".cloze .g")[0].click(); } }
+  if (act === "drawer") { click(byText("Grammar")); }
+  document.title = "ready";
+};
+</script>
